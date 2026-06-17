@@ -1,3 +1,7 @@
+// use serde::Deserialize;
+
+#![allow(dead_code)]
+
 #[derive(Debug, serde::Deserialize)]
 pub struct RawProvince {
     pub code: String,
