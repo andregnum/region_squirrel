@@ -1,6 +1,6 @@
-use crate::models::{
+use crate::{models::{
     RawDistrict, RawProvince, RawRegency, RawVillage, Region
-};
+}, sources::indonesia::IndonesiaLocalData};
 
 pub fn normalize_provinces(provinces: Vec<RawProvince>) -> Vec<Region> {
     provinces
@@ -56,4 +56,15 @@ pub fn normalize_villages(villages: Vec<RawVillage>) -> Vec<Region> {
         parent_source_code: Some(village.district_code),
     })
     .collect()
+}
+
+pub fn normalize_indonesia_data(data: IndonesiaLocalData) -> Vec<Region> {
+    let mut regions = Vec::new();
+
+    regions.extend(normalize_provinces(data.provinces));
+    regions.extend(normalize_regencies(data.regencies));
+    regions.extend(normalize_districts(data.districts));
+    regions.extend(normalize_villages(data.villages));
+
+    regions
 }
