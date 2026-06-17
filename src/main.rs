@@ -1,15 +1,39 @@
 mod models;
+mod normalize;
 mod sources;
 
-use crate::sources::indonesia::load_local_data;
+use normalize::{
+    normalize_districts, normalize_provinces, normalize_regencies, normalize_villages,
+};
+
+use sources::indonesia::load_local_data;
 
 fn main() -> anyhow::Result<()> {
     let data = load_local_data()?;
 
-    println!("Loaded {} provinces", data.provinces.len());
-    println!("Loaded {} regencies", data.regencies.len());
-    println!("Loaded {} districts", data.districts.len());
-    println!("Loaded {} villages", data.villages.len());
+    let mut regions = Vec::new();
+
+    let provinces = normalize_provinces(data.provinces);
+    let regencies = normalize_regencies(data.regencies);
+    let districts = normalize_districts(data.districts);
+    let villages = normalize_villages(data.villages);
+
+    regions.extend(provinces);
+    regions.extend(regencies);
+    regions.extend(districts);
+    regions.extend(villages);
+
+    for region in regions {
+        println!(
+            "Country: {}, Source Code: {}, Name: {}, Level: {}, Type: {}, Parent Source Code: {:?}",
+            region.country_code,
+            region.source_code,
+            region.name,
+            region.level,
+            region.region_type,
+            region.parent_source_code
+        );
+    }
 
     Ok(())
 }
