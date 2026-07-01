@@ -1,15 +1,21 @@
 mod models;
 mod normalize;
 mod sources;
+mod validate;
 
 use normalize::normalize_indonesia_data;
 
 use sources::indonesia::load_local_data;
 
+use validate::validate_regions;
+
 fn main() -> anyhow::Result<()> {
     let data = load_local_data()?;
 
     let regions = normalize_indonesia_data(data);
+
+    validate_regions(&regions)
+        .map_err(|errors| anyhow::anyhow!("validation failed:\n{}", errors.join("\n")))?;
 
     for region in regions {
         let parent = match region.parent_source_code {
