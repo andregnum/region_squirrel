@@ -1,3 +1,4 @@
+mod export;
 mod models;
 mod normalize;
 mod sources;
@@ -9,6 +10,8 @@ use sources::indonesia::load_local_data;
 
 use validate::validate_regions;
 
+use export::export_regions_to_json;
+
 fn main() -> anyhow::Result<()> {
     let data = load_local_data()?;
 
@@ -16,6 +19,8 @@ fn main() -> anyhow::Result<()> {
 
     validate_regions(&regions)
         .map_err(|errors| anyhow::anyhow!("validation failed:\n{}", errors.join("\n")))?;
+
+    export_regions_to_json(&regions, "output/indonesia/regions.json")?;
 
     for region in regions {
         let parent = match region.parent_source_code {
