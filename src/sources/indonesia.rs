@@ -1,6 +1,8 @@
 use std::fs::File;
 use std::path::Path;
 
+use anyhow::Context;
+
 use crate::models::{RawDistrict, RawProvince, RawRegency, RawVillage};
 
 #[derive(Debug)]
@@ -34,7 +36,12 @@ fn read_json_file<T>(path: impl AsRef<Path>) -> anyhow::Result<Vec<T>>
 where
     T: serde::de::DeserializeOwned,
 {
-    let file = File::open(path)?;
-    let data = serde_json::from_reader(file)?;
+    let path = path.as_ref();
+
+    let file = File::open(path).with_context(|| format!("failed to open {}", path.display()))?;
+
+    let data = serde_json::from_reader(file)
+        .with_context(|| format!("failed to parse {}", path.display()))?;
+
     Ok(data)
 }

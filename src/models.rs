@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 
-use serde::{ Serialize, Deserialize };
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Deserialize)]
 pub struct RawProvince {
@@ -25,7 +25,7 @@ pub struct RawDistrict {
 #[derive(Debug, Deserialize)]
 pub struct RawVillage {
     pub code: String,
-    pub district_code: String, 
+    pub district_code: String,
     pub name: String,
 }
 
