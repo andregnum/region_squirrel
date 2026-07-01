@@ -3,15 +3,27 @@ use crate::{
     sources::indonesia::IndonesiaLocalData,
 };
 
+const INDONESIA_COUNTRY_CODE: &str = "ID";
+
+const LEVEL_PROVINCE: u8 = 1;
+const LEVEL_REGENCY: u8 = 2;
+const LEVEL_DISTRICT: u8 = 3;
+const LEVEL_VILLAGE: u8 = 4;
+
+const TYPE_PROVINCE: &str = "province";
+const TYPE_REGENCY: &str = "regency";
+const TYPE_DISTRICT: &str = "district";
+const TYPE_VILLAGE: &str = "village";
+
 pub fn normalize_provinces(provinces: Vec<RawProvince>) -> Vec<Region> {
     provinces
         .into_iter()
         .map(|province| Region {
-            country_code: "ID".to_string(),
+            country_code: INDONESIA_COUNTRY_CODE.to_string(),
             source_code: province.code,
             name: province.name,
-            level: 1,
-            region_type: "province".to_string(),
+            level: LEVEL_PROVINCE,
+            region_type: TYPE_PROVINCE.to_string(),
             parent_source_code: None,
         })
         .collect()
@@ -21,11 +33,11 @@ pub fn normalize_regencies(regencies: Vec<RawRegency>) -> Vec<Region> {
     regencies
         .into_iter()
         .map(|regency| Region {
-            country_code: "ID".to_string(),
+            country_code: INDONESIA_COUNTRY_CODE.to_string(),
             source_code: regency.code,
             name: regency.name,
-            level: 2,
-            region_type: "regency".to_string(),
+            level: LEVEL_REGENCY,
+            region_type: TYPE_REGENCY.to_string(),
             parent_source_code: Some(regency.province_code),
         })
         .collect()
@@ -35,11 +47,11 @@ pub fn normalize_districts(districts: Vec<RawDistrict>) -> Vec<Region> {
     districts
         .into_iter()
         .map(|district| Region {
-            country_code: "ID".to_string(),
+            country_code: INDONESIA_COUNTRY_CODE.to_string(),
             source_code: district.code,
             name: district.name,
-            level: 3,
-            region_type: "district".to_string(),
+            level: LEVEL_DISTRICT,
+            region_type: TYPE_DISTRICT.to_string(),
             parent_source_code: Some(district.regency_code),
         })
         .collect()
@@ -49,11 +61,11 @@ pub fn normalize_villages(villages: Vec<RawVillage>) -> Vec<Region> {
     villages
         .into_iter()
         .map(|village| Region {
-            country_code: "ID".to_string(),
+            country_code: INDONESIA_COUNTRY_CODE.to_string(),
             source_code: village.code,
             name: village.name,
-            level: 4,
-            region_type: "village".to_string(),
+            level: LEVEL_VILLAGE,
+            region_type: TYPE_VILLAGE.to_string(),
             parent_source_code: Some(village.district_code),
         })
         .collect()
