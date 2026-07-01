@@ -78,7 +78,7 @@ fn validate_hierarchy(regions: &[Region], errors: &mut Vec<String>) {
 
                 if !codes.contains(parent_code.as_str()) {
                     errors.push(format!(
-                        "region {} regencies missing parent {}",
+                        "region {} references missing parent {}",
                         region.source_code, parent_code
                     ));
                 }
