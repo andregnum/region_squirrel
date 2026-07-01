@@ -39,7 +39,7 @@ pub fn normalize_districts(districts: Vec<RawDistrict>) -> Vec<Region> {
         name: district.name,
         level: 3,
         region_type: "district".to_string(),
-        parent_source_code: Some(district.regencies_code),
+        parent_source_code: Some(district.regency_code),
     })
     .collect()
 }
