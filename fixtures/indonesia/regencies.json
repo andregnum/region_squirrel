@@ -3,5 +3,15 @@
     "code": "31.71",
     "province_code": "31",
     "name": "Kota Jakarta Pusat"
+  },
+  {
+    "code": "31.73",
+    "province_code": "31",
+    "name": "Kota Jakarta Barat"
+  },
+  {
+    "code": "32.73",
+    "province_code": "32",
+    "name": "Kota Bandung"
   }
 ]

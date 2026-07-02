@@ -3,5 +3,20 @@
     "code": "31.71.03",
     "regency_code": "31.71",
     "name": "Kemayoran"
+  },
+  {
+    "code": "31.71.04",
+    "regency_code": "31.71",
+    "name": "Senen"
+  },
+  {
+    "code": "31.73.01",
+    "regency_code": "31.73",
+    "name": "Cengkareng"
+  },
+  {
+    "code": "32.73.01",
+    "regency_code": "32.73",
+    "name": "Sukajadi"
   }
 ]
