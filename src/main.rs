@@ -10,7 +10,10 @@ mod validate;
 
 use clap::Parser;
 use cli::{Cli, Command, Country};
-use pipeline::{fetch_indonesia_sources, normalize_indonesia, print_indonesia_sources};
+use pipeline::{
+    fetch_indonesia_sources, normalize_indonesia, parse_bps_indonesia_sources,
+    print_indonesia_sources,
+};
 
 fn main() -> anyhow::Result<()> {
     let cli = Cli::parse();
@@ -28,6 +31,9 @@ fn main() -> anyhow::Result<()> {
         }
         Command::Fetch { country } => match country {
             Country::Indonesia => fetch_indonesia_sources(),
+        },
+        Command::ParseBps { country } => match country {
+            Country::Indonesia => parse_bps_indonesia_sources(),
         },
     }
 }

@@ -2,6 +2,7 @@ use std::fs::File;
 use std::path::Path;
 
 use anyhow::Context;
+use serde::Deserialize;
 
 use crate::cache::copy_file_to_cache;
 use crate::models::{RawDistrict, RawProvince, RawRegency, RawVillage};
@@ -21,6 +22,14 @@ pub enum BpsRegionLevel {
     Regency,
     District,
     Village,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct BpsRegionRecord {
+    pub kode_bps: String,
+    pub nama_bps: String,
+    pub kode_dagri: String,
+    pub nama_dagri: String,
 }
 
 #[derive(Debug)]
@@ -180,11 +189,11 @@ pub fn preview_bps_source_urls() -> Vec<(String, String)> {
 pub fn build_bps_cache_path(level: BpsRegionLevel, parent: Option<&str>) -> String {
     match parent {
         Some(parent) => format!(
-            "cache/raw/indonesia/{}/{}.json",
+            "cache/raw/indonesia/bps/{}/{}.json",
             level.as_cache_name(),
             parent
         ),
-        None => format!("cache/raw/indonesia/{}.json", level.as_cache_name()),
+        None => format!("cache/raw/indonesia/bps/{}.json", level.as_cache_name()),
     }
 }
 pub fn build_bps_province_source_file() -> SourceFile {
@@ -193,4 +202,9 @@ pub fn build_bps_province_source_file() -> SourceFile {
         url: build_bps_source_url(BpsRegionLevel::Province, None),
         cache_path: build_bps_cache_path(BpsRegionLevel::Province, None),
     }
+}
+pub fn load_cached_bps_provinces() -> anyhow::Result<Vec<BpsRegionRecord>> {
+    let cache_path = build_bps_cache_path(BpsRegionLevel::Province, None);
+
+    read_json_file(cache_path).with_context(|| "failed to load cached BPS provinces".to_string())
 }

@@ -22,6 +22,10 @@ pub enum Command {
         #[arg(value_enum)]
         country: Country,
     },
+    ParseBps {
+        #[arg(value_enum)]
+        country: Country,
+    },
 }
 
 #[derive(Debug, Clone, ValueEnum)]
