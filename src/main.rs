@@ -10,7 +10,7 @@ use sources::indonesia::load_local_data;
 
 use validate::validate_regions;
 
-use export::export_regions_to_json;
+use export::{export_regions_to_csv, export_regions_to_json};
 
 fn main() -> anyhow::Result<()> {
     let data = load_local_data()?;
@@ -21,6 +21,7 @@ fn main() -> anyhow::Result<()> {
         .map_err(|errors| anyhow::anyhow!("validation failed:\n{}", errors.join("\n")))?;
 
     export_regions_to_json(&regions, "output/indonesia/regions.json")?;
+    export_regions_to_csv(&regions, "output/indonesia/regions.csv")?;
 
     for region in regions {
         let parent = match region.parent_source_code {
