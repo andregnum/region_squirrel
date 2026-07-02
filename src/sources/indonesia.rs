@@ -5,9 +5,32 @@ use anyhow::Context;
 
 use crate::cache::copy_file_to_cache;
 use crate::models::{RawDistrict, RawProvince, RawRegency, RawVillage};
-use crate::sources::RegionSource;
+use crate::sources::{RegionSource, SourceFile};
 
 pub struct LocalIndonesiaSource;
+
+pub const INDONESIA_SOURCE_FILES: &[SourceFile] = &[
+    SourceFile {
+        name: "provinces",
+        url: "https://example.com/indonesia/provinces.json",
+        cache_path: "cache/raw/indonesia/provinces.json",
+    },
+    SourceFile {
+        name: "regencies",
+        url: "https://example.com/indonesia/regencies.json",
+        cache_path: "cache/raw/indonesia/regencies.json",
+    },
+    SourceFile {
+        name: "districts",
+        url: "https://example.com/indonesia/districts.json",
+        cache_path: "cache/raw/indonesia/districts.json",
+    },
+    SourceFile {
+        name: "villages",
+        url: "https://example.com/indonesia/villages.json",
+        cache_path: "cache/raw/indonesia/villages.json",
+    },
+];
 #[derive(Debug)]
 pub struct IndonesiaLocalData {
     pub provinces: Vec<RawProvince>,
@@ -81,4 +104,7 @@ impl RegionSource for LocalIndonesiaSource {
         cache_local_raw_data()?;
         load_local_data()
     }
+}
+pub fn list_indonesia_source_files() -> &'static [SourceFile] {
+    INDONESIA_SOURCE_FILES
 }

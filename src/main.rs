@@ -9,7 +9,7 @@ mod validate;
 
 use clap::Parser;
 use cli::{Cli, Command, Country};
-use pipeline::normalize_indonesia;
+use pipeline::{normalize_indonesia, print_indonesia_sources};
 
 fn main() -> anyhow::Result<()> {
     let cli = Cli::parse();
@@ -18,5 +18,12 @@ fn main() -> anyhow::Result<()> {
         Command::Normalize { country } => match country {
             Country::Indonesia => normalize_indonesia(),
         },
+        Command::Sources { country } => {
+            match country {
+                Country::Indonesia => print_indonesia_sources(),
+            }
+
+            Ok(())
+        }
     }
 }
