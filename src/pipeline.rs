@@ -2,7 +2,9 @@ use crate::export::{export_regions_to_csv, export_regions_to_json};
 use crate::fetch::fetch_source_file;
 use crate::normalize::normalize_indonesia_data;
 use crate::sources::RegionSource;
-use crate::sources::indonesia::{LocalIndonesiaSource, list_indonesia_source_files};
+use crate::sources::indonesia::{
+    BPS_SOURCE_CONFIG, LocalIndonesiaSource, list_indonesia_source_files, preview_bps_source_urls,
+};
 use crate::validate::validate_regions;
 
 pub fn normalize_indonesia() -> anyhow::Result<()> {
@@ -25,7 +27,20 @@ pub fn normalize_indonesia() -> anyhow::Result<()> {
 }
 
 pub fn print_indonesia_sources() {
-    println!("Indonesia Sources:");
+    println!("Indonesia BPS source config:");
+    println!("Base URL: {}", BPS_SOURCE_CONFIG.base_url);
+    println!("Alt Base URL: {}", BPS_SOURCE_CONFIG.base_url_alt);
+    println!("Periode merge: {}", BPS_SOURCE_CONFIG.periode_merge);
+    println!();
+
+    println!("BPS URL previews:");
+
+    for (name, url) in preview_bps_source_urls() {
+        println!("- {} -> {}", name, url);
+    }
+
+    println!();
+    println!("Legacy static source files:");
 
     for source_file in list_indonesia_source_files() {
         println!(

@@ -5,9 +5,15 @@ use anyhow::Context;
 
 use crate::cache::copy_file_to_cache;
 use crate::models::{RawDistrict, RawProvince, RawRegency, RawVillage};
-use crate::sources::{RegionSource, SourceFile};
+use crate::sources::{BpsSourceConfig, RegionSource, SourceFile};
 
 pub struct LocalIndonesiaSource;
+
+pub const BPS_SOURCE_CONFIG: BpsSourceConfig = BpsSourceConfig {
+    base_url: "https://sig.bps.go.id/rest-bridging/getwilayah",
+    base_url_alt: "https://sig.bps.go.id/rest-bridging-dagri/getwilayah",
+    periode_merge: "2025_1.2025",
+};
 
 pub const INDONESIA_SOURCE_FILES: &[SourceFile] = &[
     SourceFile {
@@ -31,6 +37,15 @@ pub const INDONESIA_SOURCE_FILES: &[SourceFile] = &[
         cache_path: "cache/raw/indonesia/villages.json",
     },
 ];
+
+#[derive(Debug, Clone, Copy)]
+pub enum BpsRegionLevel {
+    Province,
+    Regency,
+    District,
+    Village,
+}
+
 #[derive(Debug)]
 pub struct IndonesiaLocalData {
     pub provinces: Vec<RawProvince>,
@@ -99,6 +114,17 @@ where
     Ok(data)
 }
 
+impl BpsRegionLevel {
+    pub fn as_query_value(&self) -> &'static str {
+        match self {
+            Self::Province => "provinsi",
+            Self::Regency => "kabupaten",
+            Self::District => "kecamatan",
+            Self::Village => "desa",
+        }
+    }
+}
+
 impl RegionSource for LocalIndonesiaSource {
     fn load(&self) -> anyhow::Result<IndonesiaLocalData> {
         cache_local_raw_data()?;
@@ -107,4 +133,40 @@ impl RegionSource for LocalIndonesiaSource {
 }
 pub fn list_indonesia_source_files() -> &'static [SourceFile] {
     INDONESIA_SOURCE_FILES
+}
+pub fn build_bps_source_url(level: BpsRegionLevel, parent: Option<&str>) -> String {
+    let level_value = level.as_query_value();
+
+    let mut url = format!("{}?level={}", BPS_SOURCE_CONFIG.base_url, level_value);
+
+    if let Some(parent) = parent {
+        url.push_str(&format!("&parent={}", parent));
+    }
+
+    url.push_str(&format!(
+        "&periode_merge={}",
+        BPS_SOURCE_CONFIG.periode_merge
+    ));
+
+    url
+}
+pub fn preview_bps_source_urls() -> Vec<(String, String)> {
+    vec![
+        (
+            "provinces".to_string(),
+            build_bps_source_url(BpsRegionLevel::Province, None),
+        ),
+        (
+            "regencies example parent=21".to_string(),
+            build_bps_source_url(BpsRegionLevel::Regency, Some("21")),
+        ),
+        (
+            "districts example parent=2171".to_string(),
+            build_bps_source_url(BpsRegionLevel::District, Some("2171")),
+        ),
+        (
+            "villages example parent=2171010".to_string(),
+            build_bps_source_url(BpsRegionLevel::Village, Some("2171010")),
+        ),
+    ]
 }
