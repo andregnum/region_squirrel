@@ -3,7 +3,8 @@ use crate::fetch::fetch_source_file;
 use crate::normalize::normalize_indonesia_data;
 use crate::sources::RegionSource;
 use crate::sources::indonesia::{
-    BPS_SOURCE_CONFIG, LocalIndonesiaSource, list_indonesia_source_files, preview_bps_source_urls,
+    BPS_SOURCE_CONFIG, LocalIndonesiaSource, build_bps_province_source_file,
+    list_indonesia_source_files, preview_bps_source_urls,
 };
 use crate::validate::validate_regions;
 
@@ -48,17 +49,26 @@ pub fn print_indonesia_sources() {
             source_file.name, source_file.url, source_file.cache_path
         );
     }
+
+    let bps_province_source = build_bps_province_source_file();
+
+    println!();
+    println!("BPS fetch target:");
+    println!(
+        "- {} -> {} -> {}",
+        bps_province_source.name, bps_province_source.url, bps_province_source.cache_path
+    );
 }
 pub fn fetch_indonesia_sources() -> anyhow::Result<()> {
-    println!("Fetching Indonesia sources...");
+    println!("Fetching Indonesia BPS province sources...");
 
-    for source_file in list_indonesia_source_files() {
-        println!("Fetching {} from {}", source_file.name, source_file.url);
+    let source_file = build_bps_province_source_file();
 
-        fetch_source_file(source_file)?;
+    println!("Fetching {} from {}", source_file.name, source_file.url);
 
-        println!("Cached {} to {}", source_file.name, source_file.cache_path);
-    }
+    fetch_source_file(&source_file)?;
+
+    println!("Cached {} to {}", source_file.name, source_file.cache_path);
 
     Ok(())
 }

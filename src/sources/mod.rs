@@ -3,9 +3,9 @@ use crate::sources::indonesia::IndonesiaLocalData;
 
 #[derive(Debug, Clone)]
 pub struct SourceFile {
-    pub name: &'static str,
-    pub url: &'static str,
-    pub cache_path: &'static str,
+    pub name: String,
+    pub url: String,
+    pub cache_path: String,
 }
 #[derive(Debug, Clone)]
 pub struct BpsSourceConfig {
