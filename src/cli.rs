@@ -14,6 +14,10 @@ pub enum Command {
         #[arg(value_enum)]
         country: Country,
     },
+    Sources {
+        #[arg(value_enum)]
+        country: Country,
+    },
 }
 
 #[derive(Debug, Clone, ValueEnum)]

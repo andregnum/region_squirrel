@@ -1,7 +1,7 @@
 use crate::export::{export_regions_to_csv, export_regions_to_json};
 use crate::normalize::normalize_indonesia_data;
 use crate::sources::RegionSource;
-use crate::sources::indonesia::LocalIndonesiaSource;
+use crate::sources::indonesia::{LocalIndonesiaSource, list_indonesia_source_files};
 use crate::validate::validate_regions;
 
 pub fn normalize_indonesia() -> anyhow::Result<()> {
@@ -21,4 +21,15 @@ pub fn normalize_indonesia() -> anyhow::Result<()> {
     println!("CSV: output/indonesia/regions.csv");
 
     Ok(())
+}
+
+pub fn print_indonesia_sources() {
+    println!("Indonesia Sources:");
+
+    for source_file in list_indonesia_source_files() {
+        println!(
+            "- {} -> {} -> {}",
+            source_file.name, source_file.url, source_file.cache_path
+        );
+    }
 }
