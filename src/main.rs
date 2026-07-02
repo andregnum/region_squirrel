@@ -1,6 +1,7 @@
 mod cache;
 mod cli;
 mod export;
+mod fetch;
 mod models;
 mod normalize;
 mod pipeline;
@@ -9,7 +10,7 @@ mod validate;
 
 use clap::Parser;
 use cli::{Cli, Command, Country};
-use pipeline::{normalize_indonesia, print_indonesia_sources};
+use pipeline::{fetch_indonesia_sources, normalize_indonesia, print_indonesia_sources};
 
 fn main() -> anyhow::Result<()> {
     let cli = Cli::parse();
@@ -25,5 +26,8 @@ fn main() -> anyhow::Result<()> {
 
             Ok(())
         }
+        Command::Fetch { country } => match country {
+            Country::Indonesia => fetch_indonesia_sources(),
+        },
     }
 }

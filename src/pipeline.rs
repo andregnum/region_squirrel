@@ -1,4 +1,5 @@
 use crate::export::{export_regions_to_csv, export_regions_to_json};
+use crate::fetch::fetch_source_file;
 use crate::normalize::normalize_indonesia_data;
 use crate::sources::RegionSource;
 use crate::sources::indonesia::{LocalIndonesiaSource, list_indonesia_source_files};
@@ -32,4 +33,17 @@ pub fn print_indonesia_sources() {
             source_file.name, source_file.url, source_file.cache_path
         );
     }
+}
+pub fn fetch_indonesia_sources() -> anyhow::Result<()> {
+    println!("Fetching Indonesia sources...");
+
+    for source_file in list_indonesia_source_files() {
+        println!("Fetching {} from {}", source_file.name, source_file.url);
+
+        fetch_source_file(source_file)?;
+
+        println!("Cached {} to {}", source_file.name, source_file.cache_path);
+    }
+
+    Ok(())
 }

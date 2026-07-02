@@ -18,6 +18,10 @@ pub enum Command {
         #[arg(value_enum)]
         country: Country,
     },
+    Fetch {
+        #[arg(value_enum)]
+        country: Country,
+    },
 }
 
 #[derive(Debug, Clone, ValueEnum)]

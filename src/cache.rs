@@ -25,3 +25,16 @@ pub fn copy_file_to_cache(
 
     Ok(())
 }
+pub fn write_text_to_cache(content: &str, cache_path: impl AsRef<Path>) -> anyhow::Result<()> {
+    let cache_path = cache_path.as_ref();
+
+    if let Some(parent) = cache_path.parent() {
+        fs::create_dir_all(parent)
+            .with_context(|| format!("failed to create cache directory {}", parent.display()))?;
+    }
+
+    fs::write(cache_path, content)
+        .with_context(|| format!("failed to write cache file {}", cache_path.display()))?;
+
+    Ok(())
+}
