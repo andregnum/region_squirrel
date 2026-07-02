@@ -15,29 +15,6 @@ pub const BPS_SOURCE_CONFIG: BpsSourceConfig = BpsSourceConfig {
     periode_merge: "2025_1.2025",
 };
 
-pub const INDONESIA_SOURCE_FILES: &[SourceFile] = &[
-    SourceFile {
-        name: "provinces",
-        url: "https://example.com/indonesia/provinces.json",
-        cache_path: "cache/raw/indonesia/provinces.json",
-    },
-    SourceFile {
-        name: "regencies",
-        url: "https://example.com/indonesia/regencies.json",
-        cache_path: "cache/raw/indonesia/regencies.json",
-    },
-    SourceFile {
-        name: "districts",
-        url: "https://example.com/indonesia/districts.json",
-        cache_path: "cache/raw/indonesia/districts.json",
-    },
-    SourceFile {
-        name: "villages",
-        url: "https://example.com/indonesia/villages.json",
-        cache_path: "cache/raw/indonesia/villages.json",
-    },
-];
-
 #[derive(Debug, Clone, Copy)]
 pub enum BpsRegionLevel {
     Province,
@@ -123,6 +100,15 @@ impl BpsRegionLevel {
             Self::Village => "desa",
         }
     }
+
+    pub fn as_cache_name(&self) -> &'static str {
+        match self {
+            Self::Province => "provinces",
+            Self::Regency => "regencies",
+            Self::District => "districts",
+            Self::Village => "villages",
+        }
+    }
 }
 
 impl RegionSource for LocalIndonesiaSource {
@@ -131,8 +117,29 @@ impl RegionSource for LocalIndonesiaSource {
         load_local_data()
     }
 }
-pub fn list_indonesia_source_files() -> &'static [SourceFile] {
-    INDONESIA_SOURCE_FILES
+pub fn list_indonesia_source_files() -> Vec<SourceFile> {
+    vec![
+        SourceFile {
+            name: "provinces".to_string(),
+            url: "https://example.com/indonesia/provinces.json".to_string(),
+            cache_path: "cache/raw/indonesia/provinces.json".to_string(),
+        },
+        SourceFile {
+            name: "regencies".to_string(),
+            url: "https://example.com/indonesia/regencies.json".to_string(),
+            cache_path: "cache/raw/indonesia/regencies.json".to_string(),
+        },
+        SourceFile {
+            name: "districts".to_string(),
+            url: "https://example.com/indonesia/districts.json".to_string(),
+            cache_path: "cache/raw/indonesia/districts.json".to_string(),
+        },
+        SourceFile {
+            name: "villages".to_string(),
+            url: "https://example.com/indonesia/villages.json".to_string(),
+            cache_path: "cache/raw/indonesia/villages.json".to_string(),
+        },
+    ]
 }
 pub fn build_bps_source_url(level: BpsRegionLevel, parent: Option<&str>) -> String {
     let level_value = level.as_query_value();
@@ -169,4 +176,21 @@ pub fn preview_bps_source_urls() -> Vec<(String, String)> {
             build_bps_source_url(BpsRegionLevel::Village, Some("2171010")),
         ),
     ]
+}
+pub fn build_bps_cache_path(level: BpsRegionLevel, parent: Option<&str>) -> String {
+    match parent {
+        Some(parent) => format!(
+            "cache/raw/indonesia/{}/{}.json",
+            level.as_cache_name(),
+            parent
+        ),
+        None => format!("cache/raw/indonesia/{}.json", level.as_cache_name()),
+    }
+}
+pub fn build_bps_province_source_file() -> SourceFile {
+    SourceFile {
+        name: "bps-provinces".to_string(),
+        url: build_bps_source_url(BpsRegionLevel::Province, None),
+        cache_path: build_bps_cache_path(BpsRegionLevel::Province, None),
+    }
 }
