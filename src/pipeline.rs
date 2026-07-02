@@ -1,10 +1,12 @@
 use crate::export::{export_regions_to_csv, export_regions_to_json};
 use crate::normalize::normalize_indonesia_data;
-use crate::sources::indonesia::load_local_data;
+use crate::sources::RegionSource;
+use crate::sources::indonesia::LocalIndonesiaSource;
 use crate::validate::validate_regions;
 
 pub fn normalize_indonesia() -> anyhow::Result<()> {
-    let data = load_local_data()?;
+    let source = LocalIndonesiaSource;
+    let data = source.load()?;
 
     let regions = normalize_indonesia_data(data);
 
