@@ -4,7 +4,9 @@ use std::path::Path;
 use anyhow::Context;
 
 use crate::models::{RawDistrict, RawProvince, RawRegency, RawVillage};
+use crate::sources::RegionSource;
 
+pub struct LocalIndonesiaSource;
 #[derive(Debug)]
 pub struct IndonesiaLocalData {
     pub provinces: Vec<RawProvince>,
@@ -44,4 +46,10 @@ where
         .with_context(|| format!("failed to parse {}", path.display()))?;
 
     Ok(data)
+}
+
+impl RegionSource for LocalIndonesiaSource {
+    fn load(&self) -> anyhow::Result<IndonesiaLocalData> {
+        load_local_data()
+    }
 }
