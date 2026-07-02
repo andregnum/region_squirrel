@@ -4,7 +4,7 @@ use crate::normalize::normalize_indonesia_data;
 use crate::sources::RegionSource;
 use crate::sources::indonesia::{
     BPS_SOURCE_CONFIG, LocalIndonesiaSource, build_bps_province_source_file,
-    list_indonesia_source_files, preview_bps_source_urls,
+    list_indonesia_source_files, load_cached_bps_provinces, preview_bps_source_urls,
 };
 use crate::validate::validate_regions;
 
@@ -69,6 +69,24 @@ pub fn fetch_indonesia_sources() -> anyhow::Result<()> {
     fetch_source_file(&source_file)?;
 
     println!("Cached {} to {}", source_file.name, source_file.cache_path);
+
+    Ok(())
+}
+pub fn parse_bps_indonesia_sources() -> anyhow::Result<()> {
+    let provinces = load_cached_bps_provinces()?;
+
+    println!("Parsed {} BPS province records", provinces.len());
+
+    for province in provinces.iter().take(10) {
+        println!(
+            "- {} | {} | {} | {}",
+            province.kode_bps, province.nama_bps, province.kode_dagri, province.nama_dagri
+        );
+    }
+
+    if provinces.len() > 10 {
+        println!("... and {} more provinces", provinces.len() - 10);
+    }
 
     Ok(())
 }
