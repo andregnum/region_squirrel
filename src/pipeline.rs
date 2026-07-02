@@ -1,0 +1,22 @@
+use crate::export::{export_regions_to_csv, export_regions_to_json};
+use crate::normalize::normalize_indonesia_data;
+use crate::sources::indonesia::load_local_data;
+use crate::validate::validate_regions;
+
+pub fn normalize_indonesia() -> anyhow::Result<()> {
+    let data = load_local_data()?;
+
+    let regions = normalize_indonesia_data(data);
+
+    validate_regions(&regions)
+        .map_err(|errors| anyhow::anyhow!("validation failed:\n{}", errors.join("\n")))?;
+
+    export_regions_to_json(&regions, "output/indonesia/regions.json")?;
+    export_regions_to_csv(&regions, "output/indonesia/regions.csv")?;
+
+    println!("Exported {} regions", regions.len());
+    println!("JSON: output/indonesia/regions.json");
+    println!("CSV: output/indonesia/regions.csv");
+
+    Ok(())
+}
