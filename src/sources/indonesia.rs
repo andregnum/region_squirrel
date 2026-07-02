@@ -3,6 +3,7 @@ use std::path::Path;
 
 use anyhow::Context;
 
+use crate::cache::copy_file_to_cache;
 use crate::models::{RawDistrict, RawProvince, RawRegency, RawVillage};
 use crate::sources::RegionSource;
 
@@ -34,6 +35,33 @@ pub fn load_local_data() -> anyhow::Result<IndonesiaLocalData> {
     })
 }
 
+pub fn cache_local_raw_data() -> anyhow::Result<()> {
+    let base_path = Path::new("fixtures/indonesia");
+    let cache_path = Path::new("cache/raw/indonesia");
+
+    copy_file_to_cache(
+        base_path.join("provinces.json"),
+        cache_path.join("provinces.json"),
+    )?;
+
+    copy_file_to_cache(
+        base_path.join("regencies.json"),
+        cache_path.join("regencies.json"),
+    )?;
+
+    copy_file_to_cache(
+        base_path.join("districts.json"),
+        cache_path.join("districts.json"),
+    )?;
+
+    copy_file_to_cache(
+        base_path.join("villages.json"),
+        cache_path.join("villages.json"),
+    )?;
+
+    Ok(())
+}
+
 fn read_json_file<T>(path: impl AsRef<Path>) -> anyhow::Result<Vec<T>>
 where
     T: serde::de::DeserializeOwned,
@@ -50,6 +78,7 @@ where
 
 impl RegionSource for LocalIndonesiaSource {
     fn load(&self) -> anyhow::Result<IndonesiaLocalData> {
+        cache_local_raw_data()?;
         load_local_data()
     }
 }
