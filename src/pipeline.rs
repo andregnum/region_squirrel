@@ -1,3 +1,4 @@
+use crate::cli::FetchLevel;
 use crate::export::{export_regions_to_csv, export_regions_to_json};
 use crate::fetch::fetch_source_file;
 use crate::normalize::{
@@ -67,57 +68,22 @@ pub fn print_indonesia_sources() {
         bps_province_source.name, bps_province_source.url, bps_province_source.cache_path
     );
 }
-pub fn fetch_indonesia_sources() -> anyhow::Result<()> {
-    println!("Fetching Indonesia BPS province sources...");
-
-    let province_source_file = build_bps_province_source_file();
-
-    println!(
-        "Fetching {} from {}",
-        province_source_file.name, province_source_file.url
-    );
-
-    fetch_source_file(&province_source_file)?;
-
-    println!(
-        "Cached {} to {}",
-        province_source_file.name, province_source_file.cache_path
-    );
-
-    let provinces = load_cached_bps_provinces()?;
-
-    println!();
-    println!(
-        "Fetching BPS regency sources for {} provinces with polite throttling...",
-        provinces.len()
-    );
-
-    for province in provinces {
-        let source_file = build_bps_regency_source_file(&province.kode_bps);
-
-        println!("Fetching {} from {}", source_file.name, source_file.url);
-
-        fetch_source_file(&source_file)?;
-
-        println!("Cached {} to {}", source_file.name, source_file.cache_path);
-    }
-
-    let regencies = load_cached_bps_regencies()?;
-
-    println!();
-    println!(
-        "Fetching BPS district sources for {} regencies with polite throttling...",
-        regencies.len()
-    );
-
-    for regency in regencies {
-        let source_file = build_bps_district_source_file(&regency.record.kode_bps);
-
-        println!("Fetching {} from {}", source_file.name, source_file.url);
-
-        fetch_source_file(&source_file)?;
-
-        println!("Cached {} to {}", source_file.name, source_file.cache_path);
+pub fn fetch_indonesia_sources(level: FetchLevel) -> anyhow::Result<()> {
+    match level {
+        FetchLevel::Provinces => {
+            fetch_bps_provinces()?;
+        }
+        FetchLevel::Regencies => {
+            fetch_bps_regencies()?;
+        }
+        FetchLevel::Districts => {
+            fetch_bps_districts()?;
+        }
+        FetchLevel::All => {
+            fetch_bps_provinces()?;
+            fetch_bps_regencies()?;
+            fetch_bps_districts()?;
+        }
     }
 
     Ok(())
@@ -237,6 +203,69 @@ pub fn parse_bps_indonesia_sources() -> anyhow::Result<()> {
             region.region_type,
             parent
         );
+    }
+
+    Ok(())
+}
+
+fn fetch_bps_provinces() -> anyhow::Result<()> {
+    println!("Fetching Indonesia BPS province source...");
+
+    let province_source_file = build_bps_province_source_file();
+
+    println!(
+        "Fetching {} from {}",
+        province_source_file.name, province_source_file.url,
+    );
+
+    fetch_source_file(&province_source_file)?;
+
+    println!(
+        "Cached {} to {}",
+        province_source_file.name, province_source_file.url
+    );
+
+    Ok(())
+}
+
+fn fetch_bps_regencies() -> anyhow::Result<()> {
+    let provinces = load_cached_bps_provinces()?;
+
+    println!();
+    println!(
+        "Fetching Indonesia BPS regency source for {} provinces with polite throttling...",
+        provinces.len()
+    );
+
+    for province in provinces {
+        let source_file = build_bps_regency_source_file(&province.kode_bps);
+
+        println!("Fetching {} from {}", source_file.name, source_file.url);
+
+        fetch_source_file(&source_file)?;
+
+        println!("Cached {} to {}", source_file.name, source_file.cache_path);
+    }
+
+    Ok(())
+}
+fn fetch_bps_districts() -> anyhow::Result<()> {
+    let regencies = load_cached_bps_regencies()?;
+
+    println!();
+    println!(
+        "Fetching Indonesia BPS district sources for {} regencies with polite throttling...",
+        regencies.len()
+    );
+
+    for regency in regencies {
+        let source_file = build_bps_district_source_file(&regency.record.kode_bps);
+
+        println!("Fetching {} from {}", source_file.name, source_file.url);
+
+        fetch_source_file(&source_file)?;
+
+        println!("Cached {} to {}", source_file.name, source_file.cache_path);
     }
 
     Ok(())

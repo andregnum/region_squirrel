@@ -21,6 +21,9 @@ pub enum Command {
     Fetch {
         #[arg(value_enum)]
         country: Country,
+
+        #[arg(value_enum, default_value_t = FetchLevel::All)]
+        level: FetchLevel,
     },
     ParseBps {
         #[arg(value_enum)]
@@ -31,4 +34,12 @@ pub enum Command {
 #[derive(Debug, Clone, ValueEnum)]
 pub enum Country {
     Indonesia,
+}
+
+#[derive(Debug, Clone, ValueEnum)]
+pub enum FetchLevel {
+    Provinces,
+    Regencies,
+    Districts,
+    All,
 }
