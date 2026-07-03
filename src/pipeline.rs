@@ -8,6 +8,9 @@ use crate::sources::indonesia::{
 };
 use crate::validate::validate_regions;
 
+const BPS_PROVINCES_JSON_OUTPUT_PATH: &str = "output/indonesia/bps/provinces.json";
+const BPS_PROVINCES_CSV_OUTPUT_PATH: &str = "output/indonesia/bps/provinces.csv";
+
 pub fn normalize_indonesia() -> anyhow::Result<()> {
     let source = LocalIndonesiaSource;
     let data = source.load()?;
@@ -93,6 +96,9 @@ pub fn parse_bps_indonesia_sources() -> anyhow::Result<()> {
     validate_regions(&regions).map_err(|errors| {
         anyhow::anyhow!("BPS province validation failed:\n{}", errors.join("\n"))
     })?;
+
+    export_regions_to_json(&regions, BPS_PROVINCES_JSON_OUTPUT_PATH)?;
+    export_regions_to_csv(&regions, BPS_PROVINCES_CSV_OUTPUT_PATH)?;
 
     println!();
     println!("Normalized {} BPS provinces to regions", regions.len());
