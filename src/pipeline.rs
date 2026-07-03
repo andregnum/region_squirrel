@@ -1,6 +1,8 @@
 use crate::export::{export_regions_to_csv, export_regions_to_json};
 use crate::fetch::fetch_source_file;
-use crate::normalize::{normalize_bps_provinces, normalize_indonesia_data};
+use crate::normalize::{
+    normalize_bps_provinces, normalize_bps_regencies, normalize_indonesia_data,
+};
 use crate::sources::RegionSource;
 use crate::sources::indonesia::{
     BPS_SOURCE_CONFIG, LocalIndonesiaSource, build_bps_province_source_file,
@@ -116,6 +118,44 @@ pub fn parse_bps_indonesia_sources() -> anyhow::Result<()> {
         println!("... and {} more provinces", provinces.len() - 10);
     }
 
+    let province_regions = normalize_bps_provinces(&provinces);
+
+    validate_regions(&province_regions).map_err(|errors| {
+        anyhow::anyhow!("BPS province validation failed:\n{}", errors.join("\n"))
+    })?;
+
+    export_regions_to_json(&province_regions, BPS_PROVINCES_JSON_OUTPUT_PATH)?;
+    export_regions_to_csv(&province_regions, BPS_PROVINCES_CSV_OUTPUT_PATH)?;
+
+    println!();
+    println!(
+        "Normalized {} BPS provinces to regions",
+        province_regions.len()
+    );
+    println!("JSON: {}", BPS_PROVINCES_JSON_OUTPUT_PATH);
+    println!("CSV: {}", BPS_PROVINCES_CSV_OUTPUT_PATH);
+
+    for region in province_regions.iter().take(10) {
+        let parent = region.parent_source_code.as_deref().unwrap_or("None");
+
+        println!(
+            "- {} | {} | {} | level {} | {} | parent: {}",
+            region.country_code,
+            region.source_code,
+            region.name,
+            region.level,
+            region.region_type,
+            parent
+        );
+    }
+
+    if province_regions.len() > 10 {
+        println!(
+            "... and {} more province regions",
+            province_regions.len() - 10
+        );
+    }
+
     let regencies = load_cached_bps_regencies()?;
 
     println!();
@@ -136,20 +176,32 @@ pub fn parse_bps_indonesia_sources() -> anyhow::Result<()> {
         println!("... and {} more regencies", regencies.len() - 10);
     }
 
-    let regions = normalize_bps_provinces(provinces);
+    let regency_regions = normalize_bps_regencies(&provinces, regencies);
 
-    validate_regions(&regions).map_err(|errors| {
-        anyhow::anyhow!("BPS province validation failed:\n{}", errors.join("\n"))
+    let mut all_regions = Vec::new();
+    all_regions.extend(province_regions);
+    all_regions.extend(regency_regions);
+
+    validate_regions(&all_regions).map_err(|errors| {
+        anyhow::anyhow!(
+            "BPS province/regency validation failed:\n{}",
+            errors.join("\n")
+        )
     })?;
 
-    export_regions_to_json(&regions, BPS_PROVINCES_JSON_OUTPUT_PATH)?;
-    export_regions_to_csv(&regions, BPS_PROVINCES_CSV_OUTPUT_PATH)?;
-
     println!();
-    println!("Normalized {} BPS provinces to regions", regions.len());
+    println!(
+        "Normalized BPS province + regency regions: {}",
+        all_regions.len()
+    );
 
-    for region in regions.iter().take(10) {
+    for region in all_regions
+        .iter()
+        .filter(|region| region.level == 2)
+        .take(10)
+    {
         let parent = region.parent_source_code.as_deref().unwrap_or("None");
+
         println!(
             "- {} | {} | {} | level {} | {} | parent: {}",
             region.country_code,
@@ -159,10 +211,6 @@ pub fn parse_bps_indonesia_sources() -> anyhow::Result<()> {
             region.region_type,
             parent
         );
-    }
-
-    if regions.len() > 10 {
-        println!("... and {} more regions", regions.len() - 10);
     }
 
     Ok(())
