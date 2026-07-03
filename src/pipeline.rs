@@ -5,7 +5,7 @@ use crate::sources::RegionSource;
 use crate::sources::indonesia::{
     BPS_SOURCE_CONFIG, LocalIndonesiaSource, build_bps_province_source_file,
     build_bps_regency_source_file, list_indonesia_source_files, load_cached_bps_provinces,
-    preview_bps_source_urls,
+    load_cached_bps_regencies, preview_bps_source_urls,
 };
 use crate::validate::validate_regions;
 
@@ -114,6 +114,26 @@ pub fn parse_bps_indonesia_sources() -> anyhow::Result<()> {
 
     if provinces.len() > 10 {
         println!("... and {} more provinces", provinces.len() - 10);
+    }
+
+    let regencies = load_cached_bps_regencies()?;
+
+    println!();
+    println!("Parsed {} BPS regency records", regencies.len());
+
+    for regency in regencies.iter().take(10) {
+        println!(
+            "- parent_bps={} | {} | {} | {} | {}",
+            regency.parent_bps_code,
+            regency.record.kode_bps,
+            regency.record.nama_bps,
+            regency.record.kode_dagri,
+            regency.record.nama_dagri,
+        );
+    }
+
+    if regencies.len() > 10 {
+        println!("... and {} more regencies", regencies.len() - 10);
     }
 
     let regions = normalize_bps_provinces(provinces);
