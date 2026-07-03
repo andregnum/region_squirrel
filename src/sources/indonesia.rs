@@ -208,3 +208,11 @@ pub fn load_cached_bps_provinces() -> anyhow::Result<Vec<BpsRegionRecord>> {
 
     read_json_file(cache_path).with_context(|| "failed to load cached BPS provinces".to_string())
 }
+
+pub fn build_bps_regency_source_file(parent_bps_code: &str) -> SourceFile {
+    SourceFile {
+        name: format!("bps-regencies-{}", parent_bps_code),
+        url: build_bps_source_url(BpsRegionLevel::Regency, Some(parent_bps_code)),
+        cache_path: build_bps_cache_path(BpsRegionLevel::Regency, Some(parent_bps_code)),
+    }
+}
