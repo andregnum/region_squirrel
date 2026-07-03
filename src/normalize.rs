@@ -1,6 +1,6 @@
 use crate::{
     models::{RawDistrict, RawProvince, RawRegency, RawVillage, Region},
-    sources::indonesia::IndonesiaLocalData,
+    sources::indonesia::{BpsRegionRecord, IndonesiaLocalData},
 };
 
 const INDONESIA_COUNTRY_CODE: &str = "ID";
@@ -22,6 +22,20 @@ pub fn normalize_provinces(provinces: Vec<RawProvince>) -> Vec<Region> {
             country_code: INDONESIA_COUNTRY_CODE.to_string(),
             source_code: province.code,
             name: province.name,
+            level: LEVEL_PROVINCE,
+            region_type: TYPE_PROVINCE.to_string(),
+            parent_source_code: None,
+        })
+        .collect()
+}
+
+pub fn normalize_bps_provinces(records: Vec<BpsRegionRecord>) -> Vec<Region> {
+    records
+        .into_iter()
+        .map(|record| Region {
+            country_code: INDONESIA_COUNTRY_CODE.to_string(),
+            source_code: record.kode_dagri,
+            name: record.nama_dagri,
             level: LEVEL_PROVINCE,
             region_type: TYPE_PROVINCE.to_string(),
             parent_source_code: None,
