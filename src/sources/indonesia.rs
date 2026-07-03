@@ -264,3 +264,11 @@ pub fn load_cached_bps_regencies() -> anyhow::Result<Vec<BpsRegencyRecord>> {
 
     Ok(regencies)
 }
+
+pub fn build_bps_district_source_file(parent_bps_code: &str) -> SourceFile {
+    SourceFile {
+        name: format!("bps-districts-{}", parent_bps_code),
+        url: build_bps_source_url(BpsRegionLevel::District, Some(parent_bps_code)),
+        cache_path: build_bps_cache_path(BpsRegionLevel::District, Some(parent_bps_code)),
+    }
+}

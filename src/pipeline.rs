@@ -5,9 +5,9 @@ use crate::normalize::{
 };
 use crate::sources::RegionSource;
 use crate::sources::indonesia::{
-    BPS_SOURCE_CONFIG, LocalIndonesiaSource, build_bps_province_source_file,
-    build_bps_regency_source_file, list_indonesia_source_files, load_cached_bps_provinces,
-    load_cached_bps_regencies, preview_bps_source_urls,
+    BPS_SOURCE_CONFIG, LocalIndonesiaSource, build_bps_district_source_file,
+    build_bps_province_source_file, build_bps_regency_source_file, list_indonesia_source_files,
+    load_cached_bps_provinces, load_cached_bps_regencies, preview_bps_source_urls,
 };
 use crate::validate::validate_regions;
 
@@ -94,6 +94,24 @@ pub fn fetch_indonesia_sources() -> anyhow::Result<()> {
 
     for province in provinces {
         let source_file = build_bps_regency_source_file(&province.kode_bps);
+
+        println!("Fetching {} from {}", source_file.name, source_file.url);
+
+        fetch_source_file(&source_file)?;
+
+        println!("Cached {} to {}", source_file.name, source_file.cache_path);
+    }
+
+    let regencies = load_cached_bps_regencies()?;
+
+    println!();
+    println!(
+        "Fetching BPS district sources for {} regencies with polite throttling...",
+        regencies.len()
+    );
+
+    for regency in regencies {
+        let source_file = build_bps_district_source_file(&regency.record.kode_bps);
 
         println!("Fetching {} from {}", source_file.name, source_file.url);
 
