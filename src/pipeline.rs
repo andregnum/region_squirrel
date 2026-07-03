@@ -1,6 +1,6 @@
 use crate::export::{export_regions_to_csv, export_regions_to_json};
 use crate::fetch::fetch_source_file;
-use crate::normalize::normalize_indonesia_data;
+use crate::normalize::{normalize_bps_provinces, normalize_indonesia_data};
 use crate::sources::RegionSource;
 use crate::sources::indonesia::{
     BPS_SOURCE_CONFIG, LocalIndonesiaSource, build_bps_province_source_file,
@@ -86,6 +86,32 @@ pub fn parse_bps_indonesia_sources() -> anyhow::Result<()> {
 
     if provinces.len() > 10 {
         println!("... and {} more provinces", provinces.len() - 10);
+    }
+
+    let regions = normalize_bps_provinces(provinces);
+
+    validate_regions(&regions).map_err(|errors| {
+        anyhow::anyhow!("BPS province validation failed:\n{}", errors.join("\n"))
+    })?;
+
+    println!();
+    println!("Normalized {} BPS provinces to regions", regions.len());
+
+    for region in regions.iter().take(10) {
+        let parent = region.parent_source_code.as_deref().unwrap_or("None");
+        println!(
+            "- {} | {} | {} | level {} | {} | parent: {}",
+            region.country_code,
+            region.source_code,
+            region.name,
+            region.level,
+            region.region_type,
+            parent
+        );
+    }
+
+    if regions.len() > 10 {
+        println!("... and {} more regions", regions.len() - 10);
     }
 
     Ok(())
