@@ -4,7 +4,8 @@ use crate::normalize::{normalize_bps_provinces, normalize_indonesia_data};
 use crate::sources::RegionSource;
 use crate::sources::indonesia::{
     BPS_SOURCE_CONFIG, LocalIndonesiaSource, build_bps_province_source_file,
-    list_indonesia_source_files, load_cached_bps_provinces, preview_bps_source_urls,
+    build_bps_regency_source_file, list_indonesia_source_files, load_cached_bps_provinces,
+    preview_bps_source_urls,
 };
 use crate::validate::validate_regions;
 
@@ -65,13 +66,37 @@ pub fn print_indonesia_sources() {
 pub fn fetch_indonesia_sources() -> anyhow::Result<()> {
     println!("Fetching Indonesia BPS province sources...");
 
-    let source_file = build_bps_province_source_file();
+    let province_source_file = build_bps_province_source_file();
 
-    println!("Fetching {} from {}", source_file.name, source_file.url);
+    println!(
+        "Fetching {} from {}",
+        province_source_file.name, province_source_file.url
+    );
 
-    fetch_source_file(&source_file)?;
+    fetch_source_file(&province_source_file)?;
 
-    println!("Cached {} to {}", source_file.name, source_file.cache_path);
+    println!(
+        "Cached {} to {}",
+        province_source_file.name, province_source_file.cache_path
+    );
+
+    let provinces = load_cached_bps_provinces()?;
+
+    println!();
+    println!(
+        "Fetching BPS regency sources for {} provinces...",
+        provinces.len()
+    );
+
+    for province in provinces {
+        let source_file = build_bps_regency_source_file(&province.kode_bps);
+
+        println!("Fetching {} from {}", source_file.name, source_file.url);
+
+        fetch_source_file(&source_file)?;
+
+        println!("Cached {} to {}", source_file.name, source_file.cache_path);
+    }
 
     Ok(())
 }
