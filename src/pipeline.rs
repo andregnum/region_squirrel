@@ -88,7 +88,7 @@ pub fn fetch_indonesia_sources() -> anyhow::Result<()> {
 
     println!();
     println!(
-        "Fetching BPS regency sources for {} provinces...",
+        "Fetching BPS regency sources for {} provinces with polite throttling...",
         provinces.len()
     );
 
