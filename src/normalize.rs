@@ -1,6 +1,8 @@
+use std::collections::HashMap;
+
 use crate::{
     models::{RawDistrict, RawProvince, RawRegency, RawVillage, Region},
-    sources::indonesia::{BpsRegionRecord, IndonesiaLocalData},
+    sources::indonesia::{BpsRegencyRecord, BpsRegionRecord, IndonesiaLocalData},
 };
 
 const INDONESIA_COUNTRY_CODE: &str = "ID";
@@ -29,13 +31,13 @@ pub fn normalize_provinces(provinces: Vec<RawProvince>) -> Vec<Region> {
         .collect()
 }
 
-pub fn normalize_bps_provinces(records: Vec<BpsRegionRecord>) -> Vec<Region> {
+pub fn normalize_bps_provinces(records: &[BpsRegionRecord]) -> Vec<Region> {
     records
         .into_iter()
         .map(|record| Region {
             country_code: INDONESIA_COUNTRY_CODE.to_string(),
-            source_code: record.kode_dagri,
-            name: record.nama_dagri,
+            source_code: record.kode_dagri.clone(),
+            name: record.nama_dagri.clone(),
             level: LEVEL_PROVINCE,
             region_type: TYPE_PROVINCE.to_string(),
             parent_source_code: None,
@@ -53,6 +55,35 @@ pub fn normalize_regencies(regencies: Vec<RawRegency>) -> Vec<Region> {
             level: LEVEL_REGENCY,
             region_type: TYPE_REGENCY.to_string(),
             parent_source_code: Some(regency.province_code),
+        })
+        .collect()
+}
+
+pub fn normalize_bps_regencies(
+    provinces: &[BpsRegionRecord],
+    regencies: Vec<BpsRegencyRecord>,
+) -> Vec<Region> {
+    let province_dagri_by_bps: HashMap<&str, &str> = provinces
+        .iter()
+        .map(|province| (province.kode_bps.as_str(), province.kode_dagri.as_str()))
+        .collect();
+
+    regencies
+        .into_iter()
+        .map(|regency| {
+            let parent_source_code = province_dagri_by_bps
+                .get(regency.parent_bps_code.as_str())
+                .map(|parent_dagri_code| (*parent_dagri_code).to_string())
+                .unwrap_or(regency.parent_bps_code);
+
+            Region {
+                country_code: INDONESIA_COUNTRY_CODE.to_string(),
+                source_code: regency.record.kode_dagri,
+                name: regency.record.nama_dagri,
+                level: LEVEL_REGENCY,
+                region_type: TYPE_REGENCY.to_string(),
+                parent_source_code: Some(parent_source_code),
+            }
         })
         .collect()
 }
