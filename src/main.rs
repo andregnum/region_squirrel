@@ -29,8 +29,8 @@ fn main() -> anyhow::Result<()> {
 
             Ok(())
         }
-        Command::Fetch { country } => match country {
-            Country::Indonesia => fetch_indonesia_sources(),
+        Command::Fetch { country, level } => match country {
+            Country::Indonesia => fetch_indonesia_sources(level),
         },
         Command::ParseBps { country } => match country {
             Country::Indonesia => parse_bps_indonesia_sources(),
