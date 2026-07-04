@@ -2,7 +2,9 @@ use std::collections::HashMap;
 
 use crate::{
     models::{RawDistrict, RawProvince, RawRegency, RawVillage, Region},
-    sources::indonesia::{BpsRegencyRecord, BpsRegionRecord, IndonesiaLocalData},
+    sources::indonesia::{
+        BpsDistrictRecord, BpsRegencyRecord, BpsRegionRecord, IndonesiaLocalData,
+    },
 };
 
 const INDONESIA_COUNTRY_CODE: &str = "ID";
@@ -61,7 +63,7 @@ pub fn normalize_regencies(regencies: Vec<RawRegency>) -> Vec<Region> {
 
 pub fn normalize_bps_regencies(
     provinces: &[BpsRegionRecord],
-    regencies: Vec<BpsRegencyRecord>,
+    regencies: &[BpsRegencyRecord],
 ) -> Vec<Region> {
     let province_dagri_by_bps: HashMap<&str, &str> = provinces
         .iter()
@@ -74,12 +76,12 @@ pub fn normalize_bps_regencies(
             let parent_source_code = province_dagri_by_bps
                 .get(regency.parent_bps_code.as_str())
                 .map(|parent_dagri_code| (*parent_dagri_code).to_string())
-                .unwrap_or(regency.parent_bps_code);
+                .unwrap_or_else(|| regency.parent_bps_code.clone());
 
             Region {
                 country_code: INDONESIA_COUNTRY_CODE.to_string(),
-                source_code: regency.record.kode_dagri,
-                name: regency.record.nama_dagri,
+                source_code: regency.record.kode_dagri.clone(),
+                name: regency.record.nama_dagri.clone(),
                 level: LEVEL_REGENCY,
                 region_type: TYPE_REGENCY.to_string(),
                 parent_source_code: Some(parent_source_code),
@@ -98,6 +100,40 @@ pub fn normalize_districts(districts: Vec<RawDistrict>) -> Vec<Region> {
             level: LEVEL_DISTRICT,
             region_type: TYPE_DISTRICT.to_string(),
             parent_source_code: Some(district.regency_code),
+        })
+        .collect()
+}
+
+pub fn normalize_bps_districts(
+    regencies: &[BpsRegencyRecord],
+    districts: Vec<BpsDistrictRecord>,
+) -> Vec<Region> {
+    let regency_dagri_by_bps: HashMap<&str, &str> = regencies
+        .iter()
+        .map(|regency| {
+            (
+                regency.record.kode_bps.as_str(),
+                regency.record.kode_dagri.as_str(),
+            )
+        })
+        .collect();
+
+    districts
+        .into_iter()
+        .map(|district| {
+            let parent_source_code = regency_dagri_by_bps
+                .get(district.parent_bps_code.as_str())
+                .map(|parent_dagri_code| (*parent_dagri_code).to_string())
+                .unwrap_or(district.parent_bps_code);
+
+            Region {
+                country_code: INDONESIA_COUNTRY_CODE.to_string(),
+                source_code: district.record.kode_dagri,
+                name: district.record.nama_dagri,
+                level: LEVEL_DISTRICT,
+                region_type: TYPE_DISTRICT.to_string(),
+                parent_source_code: Some(parent_source_code),
+            }
         })
         .collect()
 }
