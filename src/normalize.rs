@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use crate::{
     models::{RawDistrict, RawProvince, RawRegency, RawVillage, Region},
@@ -104,6 +104,16 @@ pub fn normalize_districts(districts: Vec<RawDistrict>) -> Vec<Region> {
         .collect()
 }
 
+#[derive(Debug)]
+pub struct BpsDistrictConflict {
+    pub parent_bps_code: String,
+    pub kode_bps: String,
+    pub nama_bps: String,
+    pub kode_dagri: String,
+    pub nama_dagri: String,
+    pub reason: String,
+}
+
 pub fn normalize_bps_districts(
     regencies: &[BpsRegencyRecord],
     districts: Vec<BpsDistrictRecord>,
@@ -161,4 +171,99 @@ pub fn normalize_indonesia_data(data: IndonesiaLocalData) -> Vec<Region> {
     regions.extend(normalize_villages(data.villages));
 
     regions
+}
+
+fn find_conflicted_bps_district_keys(districts: &[BpsDistrictRecord]) -> HashSet<(String, String)> {
+    let mut dagri_codes_by_bps_code: HashMap<&str, HashSet<&str>> = HashMap::new();
+    let mut dagri_names_by_bps_code: HashMap<&str, HashSet<&str>> = HashMap::new();
+    let mut bps_codes_by_dagri_code: HashMap<&str, HashSet<&str>> = HashMap::new();
+    let mut bps_names_by_dagri_code: HashMap<&str, HashSet<&str>> = HashMap::new();
+
+    for district in districts {
+        dagri_codes_by_bps_code
+            .entry(district.record.kode_bps.as_str())
+            .or_default()
+            .insert(district.record.kode_dagri.as_str());
+
+        dagri_names_by_bps_code
+            .entry(district.record.kode_bps.as_str())
+            .or_default()
+            .insert(district.record.nama_dagri.as_str());
+
+        bps_codes_by_dagri_code
+            .entry(district.record.kode_dagri.as_str())
+            .or_default()
+            .insert(district.record.kode_bps.as_str());
+
+        bps_names_by_dagri_code
+            .entry(district.record.kode_dagri.as_str())
+            .or_default()
+            .insert(district.record.nama_bps.as_str());
+    }
+
+    let mut conflicted_keys = HashSet::new();
+
+    for district in districts {
+        let kode_bps = district.record.kode_bps.as_str();
+        let kode_dagri = district.record.kode_dagri.as_str();
+
+        let bps_maps_to_multiple_dagri_codes = dagri_codes_by_bps_code
+            .get(kode_bps)
+            .is_some_and(|values| values.len() > 1);
+
+        let bps_maps_to_multiple_dagri_names = dagri_names_by_bps_code
+            .get(kode_bps)
+            .is_some_and(|values| values.len() > 1);
+
+        let dagri_maps_to_multiple_bps_codes = bps_codes_by_dagri_code
+            .get(kode_dagri)
+            .is_some_and(|values| values.len() > 1);
+
+        let dagri_maps_to_multiple_bps_names = bps_names_by_dagri_code
+            .get(kode_dagri)
+            .is_some_and(|values| values.len() > 1);
+
+        if bps_maps_to_multiple_dagri_codes
+            || bps_maps_to_multiple_dagri_names
+            || dagri_maps_to_multiple_bps_codes
+            || dagri_maps_to_multiple_bps_names
+        {
+            conflicted_keys.insert((
+                district.parent_bps_code.clone(),
+                district.record.kode_bps.clone(),
+            ));
+        }
+    }
+
+    conflicted_keys
+}
+pub fn split_clean_bps_districts(
+    districts: Vec<BpsDistrictRecord>,
+) -> (Vec<BpsDistrictRecord>, Vec<BpsDistrictConflict>) {
+    let conflicted_keys = find_conflicted_bps_district_keys(&districts);
+
+    let mut clean_districts = Vec::new();
+    let mut conflicts = Vec::new();
+
+    for district in districts {
+        let key = (
+            district.parent_bps_code.clone(),
+            district.record.kode_bps.clone(),
+        );
+
+        if conflicted_keys.contains(&key) {
+            conflicts.push(BpsDistrictConflict {
+                parent_bps_code: district.parent_bps_code,
+                kode_bps: district.record.kode_bps,
+                nama_bps: district.record.nama_bps,
+                kode_dagri: district.record.kode_dagri,
+                nama_dagri: district.record.nama_dagri,
+                reason: "conflicting BPS-DAGRI district mapping".to_string(),
+            });
+        } else {
+            clean_districts.push(district);
+        }
+    }
+
+    (clean_districts, conflicts)
 }

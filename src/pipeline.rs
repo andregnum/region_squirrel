@@ -3,7 +3,7 @@ use crate::export::{export_regions_to_csv, export_regions_to_json};
 use crate::fetch::fetch_source_file;
 use crate::normalize::{
     normalize_bps_districts, normalize_bps_provinces, normalize_bps_regencies,
-    normalize_indonesia_data,
+    normalize_indonesia_data, split_clean_bps_districts,
 };
 use crate::sources::RegionSource;
 use crate::sources::indonesia::{
@@ -186,7 +186,39 @@ pub fn parse_bps_indonesia_sources() -> anyhow::Result<()> {
         println!("... and {} more districts", districts.len() - 10);
     }
 
-    let district_regions = normalize_bps_districts(&regencies, districts);
+    let (clean_districts, district_conflicts) = split_clean_bps_districts(districts);
+
+    println!();
+    println!(
+        "Detected {} conflicted BPS district records",
+        district_conflicts.len()
+    );
+
+    for conflict in district_conflicts.iter().take(10) {
+        println!(
+            "- parent_bps={} | {} | {} | {} | {} | {}",
+            conflict.parent_bps_code,
+            conflict.kode_bps,
+            conflict.nama_bps,
+            conflict.kode_dagri,
+            conflict.nama_dagri,
+            conflict.reason
+        );
+    }
+
+    if district_conflicts.len() > 10 {
+        println!(
+            "... and {} more conflicted district records",
+            district_conflicts.len() - 10
+        );
+    }
+
+    println!(
+        "Using {} clean BPS district records for canonical normalization",
+        clean_districts.len()
+    );
+
+    let district_regions = normalize_bps_districts(&regencies, clean_districts);
 
     let mut all_regions = Vec::new();
     all_regions.extend(province_regions);
@@ -263,7 +295,7 @@ fn fetch_bps_regencies() -> anyhow::Result<()> {
     );
 
     for province in provinces {
-        let source_file = build_bps_regency_source_file(&province.kode_dagri);
+        let source_file = build_bps_regency_source_file(&province.kode_bps);
 
         println!("Fetching {} from {}", source_file.name, source_file.url);
 
@@ -284,7 +316,7 @@ fn fetch_bps_districts() -> anyhow::Result<()> {
     );
 
     for regency in regencies {
-        let source_file = build_bps_district_source_file(&regency.record.kode_dagri);
+        let source_file = build_bps_district_source_file(&regency.record.kode_bps);
 
         println!("Fetching {} from {}", source_file.name, source_file.url);
 
