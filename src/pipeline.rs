@@ -2,13 +2,15 @@ use crate::cli::FetchLevel;
 use crate::export::{export_regions_to_csv, export_regions_to_json};
 use crate::fetch::fetch_source_file;
 use crate::normalize::{
-    normalize_bps_provinces, normalize_bps_regencies, normalize_indonesia_data,
+    normalize_bps_districts, normalize_bps_provinces, normalize_bps_regencies,
+    normalize_indonesia_data, split_clean_bps_districts,
 };
 use crate::sources::RegionSource;
 use crate::sources::indonesia::{
     BPS_SOURCE_CONFIG, LocalIndonesiaSource, build_bps_district_source_file,
     build_bps_province_source_file, build_bps_regency_source_file, list_indonesia_source_files,
-    load_cached_bps_provinces, load_cached_bps_regencies, preview_bps_source_urls,
+    load_cached_bps_districts, load_cached_bps_provinces, load_cached_bps_regencies,
+    preview_bps_source_urls,
 };
 use crate::validate::validate_regions;
 
@@ -162,15 +164,70 @@ pub fn parse_bps_indonesia_sources() -> anyhow::Result<()> {
         println!("... and {} more regencies", regencies.len() - 10);
     }
 
-    let regency_regions = normalize_bps_regencies(&provinces, regencies);
+    let regency_regions = normalize_bps_regencies(&provinces, &regencies);
+
+    let districts = load_cached_bps_districts()?;
+
+    println!();
+    println!("Parsed {} BPS district records", districts.len());
+
+    for district in districts.iter().take(10) {
+        println!(
+            "- parent_bps={} | {} | {} | {} | {}",
+            district.parent_bps_code,
+            district.record.kode_bps,
+            district.record.nama_bps,
+            district.record.kode_dagri,
+            district.record.nama_dagri
+        );
+    }
+
+    if districts.len() > 10 {
+        println!("... and {} more districts", districts.len() - 10);
+    }
+
+    let (clean_districts, district_conflicts) = split_clean_bps_districts(districts);
+
+    println!();
+    println!(
+        "Detected {} conflicted BPS district records",
+        district_conflicts.len()
+    );
+
+    for conflict in district_conflicts.iter().take(10) {
+        println!(
+            "- parent_bps={} | {} | {} | {} | {} | {}",
+            conflict.parent_bps_code,
+            conflict.kode_bps,
+            conflict.nama_bps,
+            conflict.kode_dagri,
+            conflict.nama_dagri,
+            conflict.reason
+        );
+    }
+
+    if district_conflicts.len() > 10 {
+        println!(
+            "... and {} more conflicted district records",
+            district_conflicts.len() - 10
+        );
+    }
+
+    println!(
+        "Using {} clean BPS district records for canonical normalization",
+        clean_districts.len()
+    );
+
+    let district_regions = normalize_bps_districts(&regencies, clean_districts);
 
     let mut all_regions = Vec::new();
     all_regions.extend(province_regions);
     all_regions.extend(regency_regions);
+    all_regions.extend(district_regions);
 
     validate_regions(&all_regions).map_err(|errors| {
         anyhow::anyhow!(
-            "BPS province/regency validation failed:\n{}",
+            "BPS province/regency/district validation failed:\n{}",
             errors.join("\n")
         )
     })?;
@@ -180,7 +237,7 @@ pub fn parse_bps_indonesia_sources() -> anyhow::Result<()> {
 
     println!();
     println!(
-        "Normalized BPS province + regency regions: {}",
+        "Normalized BPS province + regency + district regions: {}",
         all_regions.len()
     );
 
@@ -189,7 +246,7 @@ pub fn parse_bps_indonesia_sources() -> anyhow::Result<()> {
 
     for region in all_regions
         .iter()
-        .filter(|region| region.level == 2)
+        .filter(|region| region.level == 3)
         .take(10)
     {
         let parent = region.parent_source_code.as_deref().unwrap_or("None");
