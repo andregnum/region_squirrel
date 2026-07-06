@@ -316,3 +316,10 @@ pub fn load_cached_bps_districts() -> anyhow::Result<Vec<BpsDistrictRecord>> {
 
     Ok(districts)
 }
+pub fn build_bps_village_source_file(parent_bps_code: &str) -> SourceFile {
+    SourceFile {
+        name: format!("bps-villages-{}", parent_bps_code),
+        url: build_bps_source_url(BpsRegionLevel::Village, Some(parent_bps_code)),
+        cache_path: build_bps_cache_path(BpsRegionLevel::Village, Some(parent_bps_code)),
+    }
+}
