@@ -41,5 +41,6 @@ pub enum FetchLevel {
     Provinces,
     Regencies,
     Districts,
+    Villages,
     All,
 }

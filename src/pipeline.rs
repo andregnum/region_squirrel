@@ -8,9 +8,9 @@ use crate::normalize::{
 use crate::sources::RegionSource;
 use crate::sources::indonesia::{
     BPS_SOURCE_CONFIG, LocalIndonesiaSource, build_bps_district_source_file,
-    build_bps_province_source_file, build_bps_regency_source_file, list_indonesia_source_files,
-    load_cached_bps_districts, load_cached_bps_provinces, load_cached_bps_regencies,
-    preview_bps_source_urls,
+    build_bps_province_source_file, build_bps_regency_source_file, build_bps_village_source_file,
+    list_indonesia_source_files, load_cached_bps_districts, load_cached_bps_provinces,
+    load_cached_bps_regencies, preview_bps_source_urls,
 };
 use crate::validate::validate_regions;
 
@@ -84,10 +84,14 @@ pub fn fetch_indonesia_sources(level: FetchLevel) -> anyhow::Result<()> {
         FetchLevel::Districts => {
             fetch_bps_districts()?;
         }
+        FetchLevel::Villages => {
+            fetch_bps_villages()?;
+        }
         FetchLevel::All => {
             fetch_bps_provinces()?;
             fetch_bps_regencies()?;
             fetch_bps_districts()?;
+            fetch_bps_villages()?;
         }
     }
 
@@ -333,6 +337,33 @@ fn fetch_bps_districts() -> anyhow::Result<()> {
 
     for regency in regencies {
         let source_file = build_bps_district_source_file(&regency.record.kode_bps);
+
+        println!("Fetching {} from {}", source_file.name, source_file.url);
+
+        fetch_source_file(&source_file)?;
+
+        println!("Cached {} to {}", source_file.name, source_file.cache_path);
+    }
+
+    Ok(())
+}
+fn fetch_bps_villages() -> anyhow::Result<()> {
+    let districts = load_cached_bps_districts()?;
+    let (clean_districts, district_conflicts) = split_clean_bps_districts(districts);
+
+    println!();
+    println!(
+        "Skipping {} conflicted BPS district records before village fetching",
+        district_conflicts.len()
+    );
+
+    println!(
+        "Fetching BPS village sources for {} clean districts with polite throttling...",
+        clean_districts.len()
+    );
+
+    for district in clean_districts {
+        let source_file = build_bps_village_source_file(&district.record.kode_bps);
 
         println!("Fetching {} from {}", source_file.name, source_file.url);
 
