@@ -1,5 +1,5 @@
 use crate::cli::FetchLevel;
-use crate::export::{export_regions_to_csv, export_regions_to_json};
+use crate::export::{export_regions_to_csv, export_regions_to_json, export_to_csv, export_to_json};
 use crate::fetch::fetch_source_file;
 use crate::normalize::{
     normalize_bps_districts, normalize_bps_provinces, normalize_bps_regencies,
@@ -18,6 +18,9 @@ const BPS_PROVINCES_JSON_OUTPUT_PATH: &str = "output/indonesia/bps/provinces.jso
 const BPS_PROVINCES_CSV_OUTPUT_PATH: &str = "output/indonesia/bps/provinces.csv";
 const BPS_REGIONS_JSON_OUTPUT_PATH: &str = "output/indonesia/bps/regions.json";
 const BPS_REGIONS_CSV_OUTPUT_PATH: &str = "output/indonesia/bps/regions.csv";
+const BPS_DISTRICT_CONFLICTS_JSON_OUTPUT_PATH: &str =
+    "output/indonesia/bps/conflicts/districts.json";
+const BPS_DISTRICT_CONFLICTS_CSV_OUTPUT_PATH: &str = "output/indonesia/bps/conflicts/districts.csv";
 
 pub fn normalize_indonesia() -> anyhow::Result<()> {
     let source = LocalIndonesiaSource;
@@ -212,6 +215,19 @@ pub fn parse_bps_indonesia_sources() -> anyhow::Result<()> {
             district_conflicts.len() - 10
         );
     }
+
+    export_to_json(&district_conflicts, BPS_DISTRICT_CONFLICTS_JSON_OUTPUT_PATH)?;
+
+    export_to_csv(&district_conflicts, BPS_DISTRICT_CONFLICTS_CSV_OUTPUT_PATH)?;
+
+    println!(
+        "District conflict JSON: {}",
+        BPS_DISTRICT_CONFLICTS_JSON_OUTPUT_PATH
+    );
+    println!(
+        "District conflict CSV: {}",
+        BPS_DISTRICT_CONFLICTS_CSV_OUTPUT_PATH
+    );
 
     println!(
         "Using {} clean BPS district records for canonical normalization",

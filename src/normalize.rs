@@ -104,7 +104,7 @@ pub fn normalize_districts(districts: Vec<RawDistrict>) -> Vec<Region> {
         .collect()
 }
 
-#[derive(Debug)]
+#[derive(Debug, serde::Serialize)]
 pub struct BpsDistrictConflict {
     pub parent_bps_code: String,
     pub kode_bps: String,
