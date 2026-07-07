@@ -45,6 +45,12 @@ pub struct BpsDistrictRecord {
 }
 
 #[derive(Debug)]
+pub struct BpsVillageRecord {
+    pub parent_bps_code: String,
+    pub record: BpsRegionRecord,
+}
+
+#[derive(Debug)]
 pub struct IndonesiaLocalData {
     pub provinces: Vec<RawProvince>,
     pub regencies: Vec<RawRegency>,
@@ -322,4 +328,42 @@ pub fn build_bps_village_source_file(parent_bps_code: &str) -> SourceFile {
         url: build_bps_source_url(BpsRegionLevel::Village, Some(parent_bps_code)),
         cache_path: build_bps_cache_path(BpsRegionLevel::Village, Some(parent_bps_code)),
     }
+}
+pub fn load_cached_bps_villages() -> anyhow::Result<Vec<BpsVillageRecord>> {
+    let villages_dir = Path::new("cache/raw/indonesia/bps/villages");
+
+    let mut villages = Vec::new();
+
+    for entry in fs::read_dir(villages_dir)
+        .with_context(|| format!("failed to read {}", villages_dir.display()))?
+    {
+        let entry =
+            entry.with_context(|| format!("failed to read entry in {}", villages_dir.display()))?;
+
+        let path = entry.path();
+
+        if path.extension().and_then(|extension| extension.to_str()) != Some("json") {
+            continue;
+        }
+
+        let parent_bps_code = path
+            .file_stem()
+            .and_then(|file_stem| file_stem.to_str())
+            .ok_or_else(|| anyhow::anyhow!("invalid village cache file name {}", path.display()))?
+            .to_string();
+
+        let records: Vec<BpsRegionRecord> = read_json_file(&path)
+            .with_context(|| format!("failed to load cached BPS villages {}", path.display()))?;
+
+        for record in records {
+            villages.push(BpsVillageRecord {
+                parent_bps_code: parent_bps_code.clone(),
+                record,
+            });
+        }
+    }
+
+    villages.sort_by(|left, right| left.record.kode_bps.cmp(&right.record.kode_bps));
+
+    Ok(villages)
 }

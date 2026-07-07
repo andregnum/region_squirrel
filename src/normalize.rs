@@ -3,7 +3,7 @@ use std::collections::{HashMap, HashSet};
 use crate::{
     models::{RawDistrict, RawProvince, RawRegency, RawVillage, Region},
     sources::indonesia::{
-        BpsDistrictRecord, BpsRegencyRecord, BpsRegionRecord, IndonesiaLocalData,
+        BpsDistrictRecord, BpsRegencyRecord, BpsRegionRecord, BpsVillageRecord, IndonesiaLocalData,
     },
 };
 
@@ -114,9 +114,19 @@ pub struct BpsDistrictConflict {
     pub reason: String,
 }
 
+#[derive(Debug, serde::Serialize)]
+pub struct BpsVillageConflict {
+    pub parent_bps_code: String,
+    pub kode_bps: String,
+    pub nama_bps: String,
+    pub kode_dagri: String,
+    pub nama_dagri: String,
+    pub reason: String,
+}
+
 pub fn normalize_bps_districts(
     regencies: &[BpsRegencyRecord],
-    districts: Vec<BpsDistrictRecord>,
+    districts: &[BpsDistrictRecord],
 ) -> Vec<Region> {
     let regency_dagri_by_bps: HashMap<&str, &str> = regencies
         .iter()
@@ -134,12 +144,12 @@ pub fn normalize_bps_districts(
             let parent_source_code = regency_dagri_by_bps
                 .get(district.parent_bps_code.as_str())
                 .map(|parent_dagri_code| (*parent_dagri_code).to_string())
-                .unwrap_or(district.parent_bps_code);
+                .unwrap_or(district.parent_bps_code.clone());
 
             Region {
                 country_code: INDONESIA_COUNTRY_CODE.to_string(),
-                source_code: district.record.kode_dagri,
-                name: district.record.nama_dagri,
+                source_code: district.record.kode_dagri.clone(),
+                name: district.record.nama_dagri.clone(),
                 level: LEVEL_DISTRICT,
                 region_type: TYPE_DISTRICT.to_string(),
                 parent_source_code: Some(parent_source_code),
@@ -266,4 +276,133 @@ pub fn split_clean_bps_districts(
     }
 
     (clean_districts, conflicts)
+}
+fn find_conflicted_bps_village_keys(villages: &[BpsVillageRecord]) -> HashSet<(String, String)> {
+    let mut dagri_codes_by_bps_code: HashMap<&str, HashSet<&str>> = HashMap::new();
+    let mut dagri_names_by_bps_code: HashMap<&str, HashSet<&str>> = HashMap::new();
+    let mut bps_codes_by_dagri_code: HashMap<&str, HashSet<&str>> = HashMap::new();
+    let mut bps_names_by_dagri_code: HashMap<&str, HashSet<&str>> = HashMap::new();
+
+    for village in villages {
+        dagri_codes_by_bps_code
+            .entry(village.record.kode_bps.as_str())
+            .or_default()
+            .insert(village.record.kode_dagri.as_str());
+
+        dagri_names_by_bps_code
+            .entry(village.record.kode_bps.as_str())
+            .or_default()
+            .insert(village.record.nama_dagri.as_str());
+
+        bps_codes_by_dagri_code
+            .entry(village.record.kode_dagri.as_str())
+            .or_default()
+            .insert(village.record.kode_bps.as_str());
+
+        bps_names_by_dagri_code
+            .entry(village.record.kode_dagri.as_str())
+            .or_default()
+            .insert(village.record.nama_bps.as_str());
+    }
+
+    let mut conflicted_keys = HashSet::new();
+
+    for village in villages {
+        let kode_bps = village.record.kode_bps.as_str();
+        let kode_dagri = village.record.kode_dagri.as_str();
+
+        let bps_maps_to_multiple_dagri_codes = dagri_codes_by_bps_code
+            .get(kode_bps)
+            .is_some_and(|values| values.len() > 1);
+
+        let bps_maps_to_multiple_dagri_names = dagri_names_by_bps_code
+            .get(kode_bps)
+            .is_some_and(|values| values.len() > 1);
+
+        let dagri_maps_to_multiple_bps_codes = bps_codes_by_dagri_code
+            .get(kode_dagri)
+            .is_some_and(|values| values.len() > 1);
+
+        let dagri_maps_to_multiple_bps_names = bps_names_by_dagri_code
+            .get(kode_dagri)
+            .is_some_and(|values| values.len() > 1);
+
+        if bps_maps_to_multiple_dagri_codes
+            || bps_maps_to_multiple_dagri_names
+            || dagri_maps_to_multiple_bps_codes
+            || dagri_maps_to_multiple_bps_names
+        {
+            conflicted_keys.insert((
+                village.parent_bps_code.clone(),
+                village.record.kode_bps.clone(),
+            ));
+        }
+    }
+
+    conflicted_keys
+}
+
+pub fn split_clean_bps_villages(
+    villages: Vec<BpsVillageRecord>,
+) -> (Vec<BpsVillageRecord>, Vec<BpsVillageConflict>) {
+    let conflicted_keys = find_conflicted_bps_village_keys(&villages);
+
+    let mut clean_villages = Vec::new();
+    let mut conflicts = Vec::new();
+
+    for village in villages {
+        let key = (
+            village.parent_bps_code.clone(),
+            village.record.kode_bps.clone(),
+        );
+
+        if conflicted_keys.contains(&key) {
+            conflicts.push(BpsVillageConflict {
+                parent_bps_code: village.parent_bps_code,
+                kode_bps: village.record.kode_bps,
+                nama_bps: village.record.nama_bps,
+                kode_dagri: village.record.kode_dagri,
+                nama_dagri: village.record.nama_dagri,
+                reason: "conflicting BPS-DAGRI village mapping".to_string(),
+            });
+        } else {
+            clean_villages.push(village);
+        }
+    }
+
+    (clean_villages, conflicts)
+}
+
+pub fn normalize_bps_villages(
+    districts: &[BpsDistrictRecord],
+    villages: Vec<BpsVillageRecord>,
+) -> Vec<Region> {
+    let district_dagri_by_bps: HashMap<&str, &str> = districts
+        .iter()
+        .map(|district| {
+            (
+                district.record.kode_bps.as_str(),
+                district.record.kode_dagri.as_str(),
+            )
+        })
+        .collect();
+
+    villages
+        .into_iter()
+        .map(|village| {
+            let parent_source_code = district_dagri_by_bps
+                .get(village.parent_bps_code.as_str())
+                .map(|parent_dagri_code| (*parent_dagri_code).to_string())
+                .unwrap_or(village.parent_bps_code);
+
+            Region {
+                country_code: INDONESIA_COUNTRY_CODE.to_string(),
+                source_code: village.record.kode_dagri,
+                name: village.record.nama_dagri,
+                level: LEVEL_VILLAGE,
+                region_type: TYPE_VILLAGE.to_string(),
+                parent_source_code: Some(parent_source_code),
+            }
+        })
+        .collect()
 }
