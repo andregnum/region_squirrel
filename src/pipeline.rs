@@ -3,14 +3,15 @@ use crate::export::{export_regions_to_csv, export_regions_to_json, export_to_csv
 use crate::fetch::fetch_source_file;
 use crate::normalize::{
     normalize_bps_districts, normalize_bps_provinces, normalize_bps_regencies,
-    normalize_indonesia_data, split_clean_bps_districts,
+    normalize_bps_villages, normalize_indonesia_data, split_clean_bps_districts,
+    split_clean_bps_villages,
 };
 use crate::sources::RegionSource;
 use crate::sources::indonesia::{
     BPS_SOURCE_CONFIG, LocalIndonesiaSource, build_bps_district_source_file,
     build_bps_province_source_file, build_bps_regency_source_file, build_bps_village_source_file,
     list_indonesia_source_files, load_cached_bps_districts, load_cached_bps_provinces,
-    load_cached_bps_regencies, preview_bps_source_urls,
+    load_cached_bps_regencies, load_cached_bps_villages, preview_bps_source_urls,
 };
 use crate::validate::validate_regions;
 
@@ -21,6 +22,8 @@ const BPS_REGIONS_CSV_OUTPUT_PATH: &str = "output/indonesia/bps/regions.csv";
 const BPS_DISTRICT_CONFLICTS_JSON_OUTPUT_PATH: &str =
     "output/indonesia/bps/conflicts/districts.json";
 const BPS_DISTRICT_CONFLICTS_CSV_OUTPUT_PATH: &str = "output/indonesia/bps/conflicts/districts.csv";
+const BPS_VILLAGE_CONFLICTS_JSON_OUTPUT_PATH: &str = "output/indonesia/bps/conflicts/villages.json";
+const BPS_VILLAGE_CONFLICTS_CSV_OUTPUT_PATH: &str = "output/indonesia/bps/conflicts/villages.csv";
 
 pub fn normalize_indonesia() -> anyhow::Result<()> {
     let source = LocalIndonesiaSource;
@@ -238,16 +241,84 @@ pub fn parse_bps_indonesia_sources() -> anyhow::Result<()> {
         clean_districts.len()
     );
 
-    let district_regions = normalize_bps_districts(&regencies, clean_districts);
+    let district_regions = normalize_bps_districts(&regencies, &clean_districts);
+
+    let villages = load_cached_bps_villages()?;
+
+    println!();
+    println!("Parsed {} BPS village records", villages.len());
+
+    for village in villages.iter().take(10) {
+        println!(
+            "- parent_bps={} | {} | {} | {} | {}",
+            village.parent_bps_code,
+            village.record.kode_bps,
+            village.record.nama_bps,
+            village.record.kode_dagri,
+            village.record.nama_dagri
+        );
+    }
+
+    if villages.len() > 10 {
+        println!("... and {} more villages", villages.len() - 10);
+    }
+
+    let (clean_villages, village_conflicts) = split_clean_bps_villages(villages);
+
+    println!();
+    println!(
+        "Detected {} conflicted BPS village records",
+        village_conflicts.len()
+    );
+
+    for conflict in village_conflicts.iter().take(10) {
+        println!(
+            "- parent_bps={} | {} | {} | {} | {} | {}",
+            conflict.parent_bps_code,
+            conflict.kode_bps,
+            conflict.nama_bps,
+            conflict.kode_dagri,
+            conflict.nama_dagri,
+            conflict.reason
+        );
+    }
+
+    if village_conflicts.len() > 10 {
+        println!(
+            "... and {} more conflicted village records",
+            village_conflicts.len() - 10
+        );
+    }
+
+    export_to_json(&village_conflicts, BPS_VILLAGE_CONFLICTS_JSON_OUTPUT_PATH)?;
+
+    export_to_csv(&village_conflicts, BPS_VILLAGE_CONFLICTS_CSV_OUTPUT_PATH)?;
+
+    println!(
+        "Village conflict JSON: {}",
+        BPS_VILLAGE_CONFLICTS_JSON_OUTPUT_PATH
+    );
+    println!(
+        "Village conflict CSV: {}",
+        BPS_VILLAGE_CONFLICTS_CSV_OUTPUT_PATH
+    );
+
+    println!(
+        "Using {} clean BPS village records for canonical normalization",
+        clean_villages.len()
+    );
+
+    let village_regions = normalize_bps_villages(&clean_districts, clean_villages);
 
     let mut all_regions = Vec::new();
     all_regions.extend(province_regions);
     all_regions.extend(regency_regions);
     all_regions.extend(district_regions);
+    all_regions.extend(village_regions);
 
     validate_regions(&all_regions).map_err(|errors| {
         anyhow::anyhow!(
-            "BPS province/regency/district validation failed:\n{}",
+            "BPS province/regency/district/village validation failed:\n{}",
             errors.join("\n")
         )
     })?;
@@ -257,7 +328,7 @@ pub fn parse_bps_indonesia_sources() -> anyhow::Result<()> {
 
     println!();
     println!(
-        "Normalized BPS province + regency + district regions: {}",
+        "Normalized BPS province + regency + district + village regions: {}",
         all_regions.len()
     );
 
@@ -266,7 +337,7 @@ pub fn parse_bps_indonesia_sources() -> anyhow::Result<()> {
 
     for region in all_regions
         .iter()
-        .filter(|region| region.level == 3)
+        .filter(|region| region.level == 4)
         .take(10)
     {
         let parent = region.parent_source_code.as_deref().unwrap_or("None");
